@@ -18,8 +18,8 @@
 
 static const int RX_BUF_SIZE = 1024;
 
-#define TXD_PIN (GPIO_NUM_17)
-#define RXD_PIN (GPIO_NUM_16)
+#define TXD_PIN (GPIO_NUM_14)
+#define RXD_PIN (GPIO_NUM_13)
 #define DEFAULT_SCAN_LIST_SIZE 20
 #define MS_DELAY 1000 // scanning wifi every 1s
 
@@ -43,24 +43,23 @@ float calc_dist_rssi(int rssi) {
         return m;
 }
 
-const uart_config_t uart_config = {
+void init_uart(void) {
+        const uart_config_t uart_config = {
         .baud_rate = 115200,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_DEFAULT,
+        .source_clk = UART_SCLK_APB,
 };
-
-void init_uart(void) {
-        uart_driver_install(UART_NUM_2, RX_BUF_SIZE * 2, 0, 0, NULL, 0);
-        uart_param_config(UART_NUM_2, &uart_config);
-        uart_set_pin(UART_NUM_2, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        uart_driver_install(UART_NUM_0, RX_BUF_SIZE * 2, 0, 0, NULL, 0);
+        uart_param_config(UART_NUM_0, &uart_config);
+        uart_set_pin(UART_NUM_0, TXD_PIN, RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 }
 
 int sendData(const char* data) {
         const int len = strlen(data);
-        const int txBytes = uart_write_bytes(UART_NUM_2, data, len);
+        const int txBytes = uart_write_bytes(UART_NUM_0, data, len);
         return txBytes;
 }
 
@@ -96,7 +95,7 @@ static void wifi_scan(void *pvParameters) {
                         float dst = calc_dist_rssi(ap_info[i].rssi);
                         ESP_LOGD(TAG, "AP: %s x%x @: %.2fm",ap_info[i].ssid, hsh, dst);
                         char *ap = (char *)malloc(sizeof(hsh) + sizeof(dst) + sizeof(ap_info[i].authmode) + 10);
-                        sprintf(ap, "%x;%.2f;%d;%lld\n", hsh, dst, ap_info[i].authmode, now);
+                        sprintf(ap, "%x;%.2f;%d;%ld\n", hsh, dst, ap_info[i].authmode, now);
                         sendData(ap);
                         free(hashed);
                         free(ap);
